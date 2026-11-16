@@ -12,7 +12,6 @@ ffbuild_depends() {
     echo libopus
     echo libvpx
     echo onevpl
-    echo rpath
 }
 
 ffbuild_enabled() {
