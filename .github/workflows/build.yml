@@ -318,58 +318,14 @@ jobs:
           push: true
           provenance: false
           sbom: false
-          tags: ${{ steps.imagename.outputs.name }}:latest-${{ env.ARCH }}
+          tags: ${{ steps.imagename.outputs.name }}:latest
           cache-to: type=registry,mode=max,ref=${{ steps.imagename.outputs.name }}:cache-${{ env.ARCH }}
           cache-from: type=registry,ref=${{ steps.imagename.outputs.name }}:cache-${{ env.ARCH }}
-      - name: Record image
-        uses: ./.github/actions/record-image
-        with:
-          image: ${{ steps.imagename.outputs.name }}
-          arch: ${{ env.ARCH }}
           stage: variant
-  merge_targets:
-    name: Merge target-variant images
-    needs: build_targets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Login to Docker
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Merge images
-        id: merge
-        uses: ./.github/actions/merge-images
-        with:
-          stage: variant
-      - name: Package Names
-        id: pkgs
-        env:
-          IMAGES: ${{ steps.merge.outputs.images }}
-        run: |
-          PKGS=()
-          for IMG in $IMAGES; do
-            PKGS+=("${IMG#ghcr.io/*/}")
-          done
-          echo "names=$(IFS=,; echo "${PKGS[*]}")" >> $GITHUB_OUTPUT
-      - name: Cleanup
-        if: ${{ steps.pkgs.outputs.names != '' }}
-        continue-on-error: true
-        uses: FFmpeg-Builds/delete-untagged-ghcr-action@main
-        with:
-          token: ${{ github.token }}
-          package_name: ${{ steps.pkgs.outputs.names }}
-          repository_owner: ${{ github.repository_owner }}
-          repository: ${{ github.repository }}
-          owner_type: user
-          untagged_only: true
   build_ffmpeg:
     name: Build ffmpeg
     if: ${{ ( github.event.inputs.buildOnly == 'true' && !cancelled() ) || success() }}
-    needs: [build_targets, merge_targets]
+    needs: build_targets
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
